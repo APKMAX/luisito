@@ -16,8 +16,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!-- Servicio en segundo plano -->
         <service
             android:name=".SumService"
             android:enabled="true"
