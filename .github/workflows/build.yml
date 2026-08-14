@@ -1,1 +1,74 @@
+name: CI
 
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openjdk-17-jdk python3-dev zlib1g-dev libltdl-dev \
+            libffi-dev autoconf automake cmake git unzip libssl-dev
+
+      - name: Upgrade pip and install Python build dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install --user cython==0.29.37
+
+      - name: Install Kivy
+        run: |
+          pip install --user kivy pyjnius
+
+      - name: Install buildozer
+        run: |
+          pip install --user buildozer
+
+      - name: Add ~/.local/bin to PATH
+        run: |
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      # =========================================================
+      # 4. COMPILAR APK EN RELEASE
+      # =========================================================
+      - name: Build APK (release) with auto yes
+        run: |
+          yes | buildozer android release
+
+      # =========================================================
+      # 5. LISTAR ARCHIVOS GENERADOS
+      # =========================================================
+      - name: List generated files
+        run: |
+          echo "=== ARCHIVOS EN LA CARPETA bin/ ==="
+          ls -la bin/
+          echo "=== FIN LISTA ==="
+
+      # =========================================================
+      # 7. SUBIR ARTEFACTOS
+      # =========================================================
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: bin/*
+
+      # =========================================================
+      # 8. GUARDAR LOGS EN CASO DE FALLO
+      # =========================================================
+      - name: Save Buildozer logs on failure
+        if: failure()
+        run: |
+          cat .buildozer/android/platform/build-*/build.log || true
+          cat .buildozer/logs/build.log || true
