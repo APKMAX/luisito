@@ -6,7 +6,6 @@ package.domain = org.example
 
 source.dir = .
 source.include_exts = py,java,xml
-#source.include_patterns = iconos/*, *.png, *.osm, *.mp3
 
 version = 1
 
