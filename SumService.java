@@ -1,4 +1,4 @@
-package org.luisito.myapp;
+package org.example.myapp;
 
 import android.app.Service;
 import android.content.Intent;
