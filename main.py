@@ -9,13 +9,19 @@ class SumApp(App):
         self.total = 0
         Clock.schedule_interval(self.sumar, 30)
 
-        # Arrancar servicio Java en segundo plano
+        # Arrancar servicio Java adaptado a versiones modernas
         PythonActivity = autoclass('org.kivy.android.PythonActivity')
         Intent = autoclass('android.content.Intent')
+        Build = autoclass('android.os.Build')
         SumService = autoclass('org.example.myapp.SumService')
+
         activity = PythonActivity.mActivity
         intent = Intent(activity, SumService)
-        activity.startService(intent)
+
+        if Build.VERSION.SDK_INT >= 26:
+            activity.startForegroundService(intent)
+        else:
+            activity.startService(intent)
 
         return self.label
 
@@ -25,3 +31,4 @@ class SumApp(App):
 
 if __name__ == "__main__":
     SumApp().run()
+
