@@ -1,34 +1,46 @@
 from kivy.app import App
 from kivy.uix.label import Label
-from kivy.clock import Clock
 from jnius import autoclass
 
+
+SERVICE_NAME = "Backgroundservice"
+
+
 class SumApp(App):
+
     def build(self):
-        self.label = Label(text="Esperando...")
-        self.total = 0
-        Clock.schedule_interval(self.sumar, 30)
-
-        # Arrancar servicio Java adaptado a versiones modernas
-        PythonActivity = autoclass('org.kivy.android.PythonActivity')
-        Intent = autoclass('android.content.Intent')
-        Build = autoclass('android.os.Build')
-        SumService = autoclass('org.example.myapp.SumService')
-
-        activity = PythonActivity.mActivity
-        intent = Intent(activity, SumService)
-
-        if Build.VERSION.SDK_INT >= 26:
-            activity.startForegroundService(intent)
-        else:
-            activity.startService(intent)
+        self.label = Label(
+            text="Servicio en segundo plano iniciando..."
+        )
 
         return self.label
 
-    def sumar(self, dt):
-        self.total += sum(range(1, 101))
-        self.label.text = f"Total acumulado: {self.total}"
+    def on_start(self):
+        self.iniciar_servicio()
+
+    def iniciar_servicio(self):
+        try:
+            service = autoclass(
+                "org.example.myapp.ServiceBackgroundservice"
+            )
+
+            activity = autoclass(
+                "org.kivy.android.PythonActivity"
+            ).mActivity
+
+            service.start(
+                activity,
+                ""
+            )
+
+            self.label.text = "Servicio en segundo plano activo"
+
+            print("[APP] Servicio iniciado")
+
+        except Exception as e:
+            self.label.text = f"Error iniciando servicio: {e}"
+            print("[APP] Error:", e)
+
 
 if __name__ == "__main__":
     SumApp().run()
-
