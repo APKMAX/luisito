@@ -38,6 +38,13 @@ jobs:
       - name: Add ~/.local/bin to PATH
         run: |
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+      # =========================================================
+      # ⚠️ NUEVO PASO: LIMPIAR .buildozer
+      # =========================================================
+      - name: Clean previous buildozer state
+        run: |
+          rm -rf .buildozer
+          echo "✅ Carpeta .buildozer eliminada para recompilación limpia."
 
       # =========================================================
       # 4. COMPILAR APK EN RELEASE
