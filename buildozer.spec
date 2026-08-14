@@ -9,13 +9,13 @@ source.include_exts = py,java,xml
 
 version = 1
 
-requirements =  python3,kivy==2.3.1,pyjnius
+requirements =  python3,kivy,pyjnius
 
 orientation = portrait
 fullscreen = 0
 
-android.manifest = AndroidManifest.xml
-
+services = backgroundservice:background_service.py:foreground:sticky:foregroundServiceType=specialUse
+android.permissions = android.permission.FOREGROUND_SERVICE,android.permission.FOREGROUND_SERVICE_SPECIAL_USE,android.permission.POST_NOTIFICATIONS
 android.api = 34
 android.minapi = 21
 android.ndk = 25b
