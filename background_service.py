@@ -1,76 +1,77 @@
 import time
-import traceback
+import os
 from jnius import autoclass
 
 
-TOTAL = 0
-CICLO = 0
+contador = 0
+total = 0
 
 
-def actualizar_notificacion(texto):
+def guardar_info(texto):
+
     try:
-        PythonService = autoclass(
-            "org.kivy.android.PythonService"
+
+        activity = autoclass(
+            "org.kivy.android.PythonActivity"
+        ).mActivity
+
+
+        carpeta = activity.getFilesDir().getAbsolutePath()
+
+
+        archivo = os.path.join(
+            carpeta,
+            "Info.txt"
         )
 
-        servicio = PythonService.mService
 
-        if servicio:
-            servicio.updateNotification(texto)
+        with open(archivo, "w") as f:
+            f.write(texto)
+
 
     except Exception as e:
+
         print(
-            "[NOTIFICACION ERROR]",
-            e,
-            flush=True
+            "Error guardando archivo:",
+            e
         )
-
-
-def ejecutar_trabajo():
-
-    global TOTAL
-    global CICLO
-
-    CICLO += 1
-
-    # Trabajo de prueba
-    suma = sum(range(1, 101))
-
-    TOTAL += suma
-
-
-    mensaje = (
-        f"Ciclo: {CICLO} | "
-        f"Suma: {suma} | "
-        f"Total: {TOTAL}"
-    )
-
-
-    print(
-        "[SERVICE]",
-        mensaje,
-        flush=True
-    )
-
-
-    actualizar_notificacion(
-        mensaje
-    )
-
-
-print(
-    "[SERVICE] Servicio iniciado",
-    flush=True
-)
 
 
 while True:
 
     try:
-        ejecutar_trabajo()
 
-    except Exception:
-        traceback.print_exc()
+        global contador
+        global total
+
+
+        contador += 1
+
+
+        suma = sum(range(1, 101))
+
+
+        total += suma
+
+
+        variable_info = (
+            f"Ciclo: {contador}\n"
+            f"Suma realizada: {suma}\n"
+            f"Total acumulado: {total}\n"
+        )
+
+
+        guardar_info(
+            variable_info
+        )
+
+
+    except Exception as e:
+
+        print(
+            "Error servicio:",
+            e
+        )
 
 
     time.sleep(5)
