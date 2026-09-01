@@ -7,7 +7,7 @@ package.domain = org.example
 source.dir = .
 source.include_exts = py,java,xml
 
-version = 1
+version = 2
 
 requirements =  python3,kivy,pyjnius
 
