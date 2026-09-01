@@ -33,44 +33,52 @@ def guardar_info(texto):
 
         print(
             "Error guardando archivo:",
-            e
+            e,
+            flush=True
         )
+
+
+
+def ejecutar_trabajo():
+
+    global contador
+    global total
+
+
+    contador += 1
+
+
+    suma = sum(range(1, 101))
+
+
+    total += suma
+
+
+    variable_info = (
+        f"Ciclo: {contador}\n"
+        f"Suma realizada: {suma}\n"
+        f"Total acumulado: {total}\n"
+    )
+
+
+    guardar_info(
+        variable_info
+    )
 
 
 while True:
 
     try:
 
-        global contador
-        global total
-
-
-        contador += 1
-
-
-        suma = sum(range(1, 101))
-
-
-        total += suma
-
-
-        variable_info = (
-            f"Ciclo: {contador}\n"
-            f"Suma realizada: {suma}\n"
-            f"Total acumulado: {total}\n"
-        )
-
-
-        guardar_info(
-            variable_info
-        )
+        ejecutar_trabajo()
 
 
     except Exception as e:
 
         print(
             "Error servicio:",
-            e
+            e,
+            flush=True
         )
 
 
