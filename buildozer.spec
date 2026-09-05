@@ -29,8 +29,8 @@ android.ndk_api = 21
 android.archs = arm64-v8a
 
 # Deja esto comentado mientras pruebas (recomendado)
-# android.release = True
-# android.release_artifact = apk
+android.release = True
+android.release_artifact = apk
 
 # p4a
 p4a.branch = master
