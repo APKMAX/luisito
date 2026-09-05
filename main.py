@@ -1,104 +1,82 @@
 from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
+from kivy.uix.button import Button
+from kivy.utils import platform
 from kivy.clock import Clock
-from jnius import autoclass
-import os
 
+# OSC
+from oscpy.server import OSCThreadServer
+from oscpy.client import OSCClient
 
-class SumApp(App):
-
-
+class ContadorApp(App):
     def build(self):
+        self.layout = BoxLayout(orientation="vertical", padding=20, spacing=15)
 
         self.label = Label(
-            text="Esperando servicio..."
+            text="Contador: 0\n(servicio no iniciado)",
+            font_size="24sp",
+            halign="center",
+            valign="middle"
         )
+        self.label.bind(size=self.label.setter("text_size"))
 
+        self.btn_start = Button(text="Iniciar / Reiniciar Servicio", size_hint_y=None, height=60)
+        self.btn_start.bind(on_press=self.start_service)
 
-        self.carpeta = self.user_data_dir
+        self.btn_stop = Button(text="Detener Servicio", size_hint_y=None, height=60)
+        self.btn_stop.bind(on_press=self.stop_service)
 
+        self.layout.add_widget(self.label)
+        self.layout.add_widget(self.btn_start)
+        self.layout.add_widget(self.btn_stop)
 
-        os.makedirs(
-            self.carpeta,
-            exist_ok=True
-        )
-
-
-        self.ruta_archivo = os.path.join(
-            self.carpeta,
-            "Info.txt"
-        )
-
-
-        return self.label
-
-
+        return self.layout
 
     def on_start(self):
+        # Servidor OSC en la app (recibe mensajes del servicio)
+        self.server = OSCThreadServer()
+        self.server.listen(address="127.0.0.1", port=3002, default=True)
+        self.server.bind(b"/contador", self.on_contador)
 
-        self.iniciar_servicio()
+        if platform == "android":
+            # Arrancamos el servicio automáticamente
+            Clock.schedule_once(lambda dt: self.start_service(None), 0.5)
 
+    def on_contador(self, valor):
+        """Se llama cada vez que el servicio envía el contador"""
+        self.label.text = f"Contador: {valor}\n(servicio activo)"
 
-        Clock.schedule_interval(
-            self.leer_archivo,
-            1
-        )
+    def start_service(self, instance):
+        if platform != "android":
+            self.label.text = "Solo funciona en Android"
+            return
 
+        from jnius import autoclass
+        from android import mActivity
 
+        context = mActivity.getApplicationContext()
+        service_class = context.getPackageName() + ".ServiceCounter"
+        service = autoclass(service_class)
 
-    def iniciar_servicio(self):
+        # Argumento vacío (puedes pasar datos si quieres)
+        service.start(mActivity, "")
+        self.label.text = "Servicio iniciado...\nEsperando datos..."
 
-        try:
+    def stop_service(self, instance):
+        if platform != "android":
+            return
 
-            service = autoclass(
-                "org.example.myapp.ServiceBackgroundservice"
-            )
+        # Enviamos señal de parada al servicio por OSC
+        client = OSCClient("127.0.0.1", 3001)
+        client.send_message(b"/stop", [])
+        self.label.text = "Señal de parada enviada"
 
-
-            activity = autoclass(
-                "org.kivy.android.PythonActivity"
-            ).mActivity
-
-
-            service.start(
-                activity,
-                ""
-            )
-
-
-        except Exception as e:
-
-            self.label.text = (
-                "Error servicio:\n"
-                + str(e)
-            )
-
-
-
-    def leer_archivo(self, dt):
-
-        try:
-
-            if os.path.exists(
-                self.ruta_archivo
-            ):
-
-                with open(
-                    self.ruta_archivo,
-                    "r"
-                ) as archivo:
-
-                    contenido = archivo.read()
-
-
-                self.label.text = contenido
-
-
-        except Exception as e:
-
-            self.label.text = str(e)
-
-
+    def on_stop(self):
+        # Cerramos el servidor OSC al salir de la app
+        if hasattr(self, "server"):
+            self.server.stop()
+            self.server.close()
 
 if __name__ == "__main__":
-    SumApp().run()
+    ContadorApp().run()
