@@ -5,9 +5,9 @@ from kivy.uix.button import Button
 from kivy.utils import platform
 from kivy.clock import Clock
 
-# OSC
 from oscpy.server import OSCThreadServer
 from oscpy.client import OSCClient
+
 
 class ContadorApp(App):
     def build(self):
@@ -21,10 +21,18 @@ class ContadorApp(App):
         )
         self.label.bind(size=self.label.setter("text_size"))
 
-        self.btn_start = Button(text="Iniciar / Reiniciar Servicio", size_hint_y=None, height=60)
+        self.btn_start = Button(
+            text="Iniciar / Reiniciar Servicio",
+            size_hint_y=None,
+            height=60
+        )
         self.btn_start.bind(on_press=self.start_service)
 
-        self.btn_stop = Button(text="Detener Servicio", size_hint_y=None, height=60)
+        self.btn_stop = Button(
+            text="Detener Servicio",
+            size_hint_y=None,
+            height=60
+        )
         self.btn_stop.bind(on_press=self.stop_service)
 
         self.layout.add_widget(self.label)
@@ -41,7 +49,7 @@ class ContadorApp(App):
 
         if platform == "android":
             # Arrancamos el servicio automáticamente
-            Clock.schedule_once(lambda dt: self.start_service(None), 0.5)
+            Clock.schedule_once(lambda dt: self.start_service(None), 0.8)
 
     def on_contador(self, valor):
         """Se llama cada vez que el servicio envía el contador"""
@@ -59,7 +67,6 @@ class ContadorApp(App):
         service_class = context.getPackageName() + ".ServiceCounter"
         service = autoclass(service_class)
 
-        # Argumento vacío (puedes pasar datos si quieres)
         service.start(mActivity, "")
         self.label.text = "Servicio iniciado...\nEsperando datos..."
 
@@ -68,15 +75,21 @@ class ContadorApp(App):
             return
 
         # Enviamos señal de parada al servicio por OSC
-        client = OSCClient("127.0.0.1", 3001)
-        client.send_message(b"/stop", [])
-        self.label.text = "Señal de parada enviada"
+        try:
+            client = OSCClient("127.0.0.1", 3001)
+            client.send_message(b"/stop", [])
+            self.label.text = "Señal de parada enviada"
+        except Exception as e:
+            self.label.text = f"Error al detener: {e}"
 
     def on_stop(self):
-        # Cerramos el servidor OSC al salir de la app
         if hasattr(self, "server"):
-            self.server.stop()
-            self.server.close()
+            try:
+                self.server.stop()
+                self.server.close()
+            except Exception:
+                pass
+
 
 if __name__ == "__main__":
     ContadorApp().run()
