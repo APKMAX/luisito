@@ -1,39 +1,36 @@
+
 [app]
 
 title = Mi Contador Servicio
 package.name = micontador
 package.domain = org.ejemplo
 
-#package.domain = org.example
-
 source.dir = .
 source.include_exts = py
 
-version = 2
+version = 2.1
+
 requirements = python3,kivy,pyjnius,android,oscpy
 
-# Servicio (igual que antes)
-services = Counter:./service/main.py:foreground:sticky
+# Servicio correctamente configurado para Android 14+
+services = Counter:./service/main.py:foreground:sticky:foregroundServiceType=specialUse
 
-android.permissions = FOREGROUND_SERVICE, POST_NOTIFICATIONS, WAKE_LOCK
-
-#requirements =  python3,kivy,pyjnius
+# Permisos necesarios
+android.permissions = FOREGROUND_SERVICE,FOREGROUND_SERVICE_SPECIAL_USE,POST_NOTIFICATIONS,WAKE_LOCK
 
 orientation = portrait
 fullscreen = 0
 
-#services = backgroundservice:background_service.py:foreground:sticky:foregroundServiceType=specialUse
-#android.permissions = android.permission.FOREGROUND_SERVICE,android.permission.FOREGROUND_SERVICE_SPECIAL_USE,android.permission.POST_NOTIFICATIONS
+# Android
 android.api = 34
 android.minapi = 21
 android.ndk = 25b
 android.ndk_api = 21
 android.archs = arm64-v8a
 
+# Deja esto comentado mientras pruebas (recomendado)
+# android.release = True
+# android.release_artifact = apk
 
-
-p4a.branch = master               
-
-android.release = True
-android.release_artifact = apk
-
+# p4a
+p4a.branch = master
