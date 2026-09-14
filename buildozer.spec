@@ -1,8 +1,8 @@
 
 [app]
 
-title = Mi Contador Servicio
-package.name = micontador
+title = Lector pago movil
+package.name = lectorpagomovil
 package.domain = org.ejemplo
 
 source.dir = .
@@ -10,14 +10,15 @@ source.include_exts = py
 
 version = 2.1
 
-requirements = python3,kivy,pyjnius,android,oscpy
+requirements = python3,kivy,pyjnius
 
 # Servicio correctamente configurado para Android 14+
-services = Counter:./service/main.py:foreground:sticky:foregroundServiceType=specialUse
+#services = Counter:./service/main.py:foreground:sticky:foregroundServiceType=specialUse
 
 # Permisos necesarios
-android.permissions = FOREGROUND_SERVICE,FOREGROUND_SERVICE_SPECIAL_USE,POST_NOTIFICATIONS,WAKE_LOCK
+#requirements = python3,kivy,pyjnius,android
 
+android.permissions = READ_SMS
 orientation = portrait
 fullscreen = 0
 
