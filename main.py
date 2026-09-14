@@ -1,95 +1,86 @@
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
 from kivy.uix.button import Button
-from kivy.utils import platform
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.label import Label
 from kivy.clock import Clock
+from jnius import autoclass
+from android.permissions import request_permissions, Permission
+from datetime import datetime
 
-from oscpy.server import OSCThreadServer
-from oscpy.client import OSCClient
-
-
-class ContadorApp(App):
+class SMSReader(App):
     def build(self):
-        self.layout = BoxLayout(orientation="vertical", padding=20, spacing=15)
+        root = BoxLayout(orientation='vertical', padding=10, spacing=10)
 
+        self.btn = Button(text="Buscar SMS PAGOXMOVIL", size_hint_y=None, height=50)
+        self.btn.bind(on_press=self.pedir_permiso)
+        root.add_widget(self.btn)
+
+        self.scroll = ScrollView()
         self.label = Label(
-            text="Contador: 0\n(servicio no iniciado)",
-            font_size="24sp",
-            halign="center",
-            valign="middle"
-        )
-        self.label.bind(size=self.label.setter("text_size"))
-
-        self.btn_start = Button(
-            text="Iniciar / Reiniciar Servicio",
+            text="Presiona el botón para buscar...",
             size_hint_y=None,
-            height=60
+            halign="left",
+            valign="top"
         )
-        self.btn_start.bind(on_press=self.start_service)
+        # Ajustar altura automáticamente al contenido
+        self.label.bind(texture_size=lambda inst, val: setattr(inst, 'height', val[1]))
+        # Ajustar ancho del texto al ancho del ScrollView
+        self.scroll.bind(width=lambda inst, val: setattr(self.label, 'text_size', (val, None)))
+        self.scroll.add_widget(self.label)
+        root.add_widget(self.scroll)
 
-        self.btn_stop = Button(
-            text="Detener Servicio",
-            size_hint_y=None,
-            height=60
-        )
-        self.btn_stop.bind(on_press=self.stop_service)
+        return root
 
-        self.layout.add_widget(self.label)
-        self.layout.add_widget(self.btn_start)
-        self.layout.add_widget(self.btn_stop)
+    def pedir_permiso(self, instance):
+        request_permissions([Permission.READ_SMS], self.callback_permiso)
 
-        return self.layout
+    def callback_permiso(self, permissions, grants):
+        if all(grants):
+            self.label.text = "Permiso concedido. Buscando..."
+            Clock.schedule_once(lambda dt: self.leer_sms(), 0.5)
+        else:
+            self.label.text = "Permiso denegado. No se pueden leer SMS."
 
-    def on_start(self):
-        # Servidor OSC en la app (recibe mensajes del servicio)
-        self.server = OSCThreadServer()
-        self.server.listen(address="127.0.0.1", port=3002, default=True)
-        self.server.bind(b"/contador", self.on_contador)
-
-        if platform == "android":
-            # Arrancamos el servicio automáticamente
-            Clock.schedule_once(lambda dt: self.start_service(None), 0.8)
-
-    def on_contador(self, valor):
-        """Se llama cada vez que el servicio envía el contador"""
-        self.label.text = f"Contador: {valor}\n(servicio activo)"
-
-    def start_service(self, instance):
-        if platform != "android":
-            self.label.text = "Solo funciona en Android"
-            return
-
-        from jnius import autoclass
-        from android import mActivity
-
-        context = mActivity.getApplicationContext()
-        service_class = context.getPackageName() + ".ServiceCounter"
-        service = autoclass(service_class)
-
-        service.start(mActivity, "")
-        self.label.text = "Servicio iniciado...\nEsperando datos..."
-
-    def stop_service(self, instance):
-        if platform != "android":
-            return
-
-        # Enviamos señal de parada al servicio por OSC
+    def leer_sms(self):
         try:
-            client = OSCClient("127.0.0.1", 3001)
-            client.send_message(b"/stop", [])
-            self.label.text = "Señal de parada enviada"
+            PythonActivity = autoclass('org.kivy.android.PythonActivity')
+            Uri = autoclass('android.net.Uri')
+            activity = PythonActivity.mActivity
+
+            columnas = ["address", "body", "date"]
+            uri = Uri.parse("content://sms/inbox")
+
+            cursor = activity.getContentResolver().query(
+                uri, columnas, None, None, "date DESC"
+            )
+
+            mensajes = []
+            if cursor:
+                while cursor.moveToNext():
+                    address = cursor.getString(cursor.getColumnIndex("address"))
+                    body = cursor.getString(cursor.getColumnIndex("body"))
+                    date_ms = cursor.getLong(cursor.getColumnIndex("date"))
+
+                    # Filtrar por remitente o contenido (sin distinguir mayúsculas)
+                    if (address and "PAGOXMOVIL" in address.upper()) or \
+                       (body and "PAGOXMOVIL" in body.upper()):
+                        fecha = datetime.fromtimestamp(date_ms / 1000).strftime("%Y-%m-%d %H:%M:%S")
+                        mensajes.append(
+                            f"De: {address}\n"
+                            f"Fecha: {fecha}\n"
+                            f"Mensaje:\n{body}\n"
+                            f"{'-'*40}"
+                        )
+                cursor.close()
+
+            if mensajes:
+                self.label.text = "\n\n".join(mensajes)
+            else:
+                self.label.text = "No se encontraron SMS con 'PAGOXMOVIL'."
+
         except Exception as e:
-            self.label.text = f"Error al detener: {e}"
+            self.label.text = f"Error: {str(e)}"
 
-    def on_stop(self):
-        if hasattr(self, "server"):
-            try:
-                self.server.stop()
-                self.server.close()
-            except Exception:
-                pass
-
-
-if __name__ == "__main__":
-    ContadorApp().run()
+if __name__ == '__main__':
+    SMSReader().run()
